@@ -1,8 +1,5 @@
-# Obsidian local state
-.obsidian/workspace*.json
-.obsidian/cache/
-.obsidian/workspaces/
-.obsidian/plugins/
+# Obsidian local state and settings
+.obsidian/
 .trash/
 
 # Local AI/plugin indexes and runtime state
