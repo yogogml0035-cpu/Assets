@@ -1,0 +1,20 @@
+{
+  "kind": "omx.question/v1",
+  "question_id": "question-2026-04-29T07-02-23-443Z-22196865",
+  "created_at": "2026-04-29T07:02:23.443Z",
+  "updated_at": "2026-04-29T07:02:23.465Z",
+  "status": "error",
+  "header": "Round 1 | Intent | Ambiguity 100%",
+  "question": "如果这两个文档整理完成，你最希望它在一个真实使用场景里帮你完成什么？请描述一个具体场景：你当时会遇到什么问题、会怎么找内容、会怎样复用，最后什么结果会让你觉得‘这个分类真的有用’？",
+  "options": [],
+  "allow_other": true,
+  "other_label": "直接回答",
+  "multi_select": false,
+  "type": "single-answerable",
+  "source": "deep-interview",
+  "error": {
+    "code": "question_runtime_failed",
+    "message": "omx question cannot open a visible renderer because this process is outside an attached tmux pane and has no explicit tmux return bridge. Codex App/outside-tmux sessions need an attached tmux OMX CLI session or OMX_QUESTION_RETURN_PANE bridge. Run omx question from inside tmux.",
+    "at": "2026-04-29T07:02:23.465Z"
+  }
+}
