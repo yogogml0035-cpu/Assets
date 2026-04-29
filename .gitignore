@@ -1,0 +1,56 @@
+# Obsidian local state
+.obsidian/workspace*.json
+.obsidian/cache/
+.obsidian/workspaces/
+.obsidian/plugins/
+.trash/
+
+# Local AI/plugin indexes and runtime state
+.smart-env
+.omx/
+
+# Secrets and local environment files
+.env
+.env.*
+!.env.example
+*.local
+
+# OS and editor noise
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+tmp/
+temp/
+
+# Dependency and build output
+node_modules/
+dist/
+build/
+.next/
+.nuxt/
+.vite/
+coverage/
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+env/
+
+# Package manager caches
+.npm/
+.pnpm-store/
+.yarn/cache/
+.yarn/unplugged/
