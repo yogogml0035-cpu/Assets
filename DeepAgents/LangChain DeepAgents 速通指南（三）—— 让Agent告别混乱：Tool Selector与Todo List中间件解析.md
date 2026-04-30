@@ -46,18 +46,45 @@ Tool Selector中间件尤其适合以下场景：
 
 **1\. 环境准备与依赖引入：** 首先在 `langchain>=1.0.5` 、 `python>=3.12` 的环境中编写脚本，引入必要的依赖，并定义模型和工具。本例中使用 DeepSeek 模型。
 
-```javascript
-from dotenv import load_dotenvfrom langchain_core.tools import toolfrom langchain.agents import create_agentfrom langchain.agents.middleware import LLMToolSelectorMiddlewarefrom langchain_deepseek import ChatDeepSeek
+```python
+from dotenv import load_dotenv
+from langchain.agents import create_agent
+from langchain.agents.middleware import LLMToolSelectorMiddleware
+from langchain_core.tools import tool
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)
+model = ChatDeepSeek(model="deepseek-chat")
 ```
 
 **2\. 为 Agent 定义工具列表：** 编写一个核心的 `calculate` 工具，并同时定义 `tool_1` 至 `tool_4` 作为备用工具，以模拟一个拥有较多工具的场景。
 
 ```python
-@tooldef tool_1(input:str) -> str:    """    This is a useless tool, intended solely as an example.    """    return "This is a useless tool, intended solely as an example."@tooldef tool_2(input:str) -> str:    """    This is a useless tool, intended solely as an example.    """    return "This is a useless tool, intended solely as an example."@tooldef tool_3(input:str) -> str:    """    This is a useless tool, intended solely as an example.    """    return "This is a useless tool, intended solely as an example."@tooldef tool_4(input:str) -> str:    """    This is a useless tool, intended solely as an example.    """    return "This is a useless tool, intended solely as an example."
+@tool
+def tool_1(input: str) -> str:
+    """This is a useless tool, intended solely as an example."""
+    return "This is a useless tool, intended solely as an example."
 
-@tooldef calculate(expression: str) -> str:    """Perform mathematical calculations and return the result.    Args:        expression: Mathematical expression to evaluate        (e.g., "2 + 3 * 4", "sqrt(16)", "sin(pi/2)")    Returns:        The calculated result as a string    """    result = str(eval(expression))    return result
+@tool
+def tool_2(input: str) -> str:
+    """This is a useless tool, intended solely as an example."""
+    return "This is a useless tool, intended solely as an example."
+
+@tool
+def tool_3(input: str) -> str:
+    """This is a useless tool, intended solely as an example."""
+    return "This is a useless tool, intended solely as an example."
+
+@tool
+def tool_4(input: str) -> str:
+    """This is a useless tool, intended solely as an example."""
+    return "This is a useless tool, intended solely as an example."
+
+@tool
+def calculate(expression: str) -> str:
+    """Perform mathematical calculations and return the result."""
+    result = str(eval(expression))
+    return result
 ```
 
 3. **集成 LLMToolSelectorMiddleware 中间件：**
@@ -69,15 +96,26 @@ model = ChatDeepSeek(    model="deepseek-chat",)
 - `always_include`
 	一个列表，用于指定 **无论如何都必须被选中** 的工具名称。需要注意的是， `create_agent` 的 `tools` 参数传入的是工具对象列表，而 `always_include` 中传入的是这些工具对应的名称字符串。
 
-```nginx
-agent = create_agent(    model=model,    tools=[tool_1, tool_2, tool_3, tool_4,calculate],    middleware=[        LLMToolSelectorMiddleware(            model=model,            max_tools=2,            always_include=['tool_1'],        ),    ],)
+```python
+agent = create_agent(
+    model=model,
+    tools=[tool_1, tool_2, tool_3, tool_4, calculate],
+    middleware=[
+        LLMToolSelectorMiddleware(
+            model=model,
+            max_tools=2,
+            always_include=["tool_1"],
+        ),
+    ],
+)
 ```
 
 **4\. 运行测试：** 最后通过一个数学计算任务来测试效果。从运行结果可以看到，尽管工具列表庞大，但智能体依然能够准确地选择并使用 `calculate` 工具来完成计算，这证明了Tool Selector在筛选工具方面的有效性。
 
-```bash
-status = {    'messages': '请计算2+3*4的值'}
-result = agent.invoke(status)print(result)
+```python
+status = {"messages": "请计算2+3*4的值"}
+result = agent.invoke(status)
+print(result)
 ```
 
 ![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)
@@ -107,16 +145,24 @@ Todo List中间件的设计正是为了赋予Agent这种规划能力。它的实
 
 **1\. 环境准备与依赖引入：** 在 `langchain>=1.0.5` 、 `python>=3.12` 的环境中编写脚本，引入必要的依赖，并定义模型。本例中使用 DeepSeek 模型。
 
-```javascript
-from dotenv import load_dotenvfrom langchain.agents import create_agentfrom langchain.agents.middleware import TodoListMiddlewarefrom langchain_deepseek import ChatDeepSeek
+```python
+from dotenv import load_dotenv
+from langchain.agents import create_agent
+from langchain.agents.middleware import TodoListMiddleware
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)
+model = ChatDeepSeek(model="deepseek-chat")
 ```
 
 **2\. 集成 TodoListMiddleware 中间件：** 使用 `TodoListMiddleware` 中间件的方法极其简单，只需在创建Agent时，将其加入到 `middleware` 列表中即可， `write_todo` 工具会由中间件自动注入。
 
-```makefile
-agent = create_agent(    model=model,    tools=[],    middleware=[TodoListMiddleware()],)
+```python
+agent = create_agent(
+    model=model,
+    tools=[],
+    middleware=[TodoListMiddleware()],
+)
 ```
 
 **3\. 通过复杂案例测试：** 设计了一个高度复杂的、需要多步分析和计算的综合性问题来测试。当用户下达这个任务后，Todo List机制会自动生效。在Agent的最终响应中，除了常规的 `messages` （包含对话历史和最终答案），还会发现一个新增的 `todos` 字段。这个字段中包含了Agent对原始任务进行拆解后的详细子任务列表。每个子任务条目都包含 `content` （任务描述）和 `status` （状态）。
@@ -134,7 +180,9 @@ agent = create_agent(    model=model,    tools=[],    middleware=[TodoListMiddle
 
 ```python
 res = agent.invoke({"messages":["""你要一步一步的详细规划以下内容再进行回答。请分析美国加利福尼亚中央谷地的杏仁种植业在未来30年面临的气候变化风险,并估算其经济影响。具体需要回答,:“假设当前气候趋势持续,到2050年,加利福尼亚中央谷地杏仁产量可能减少的百分比及其对该州经济的潜在年度损失是多少美元?这些美元按照2025年11月的汇率能够购买多少比特币?"""]})
-print(res["messages"])print("\n---------TODO---------------\n")print(res["todos"])
+print(res["messages"])
+print("\n---------TODO---------------\n")
+print(res["todos"])
 ```
 
 ![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)

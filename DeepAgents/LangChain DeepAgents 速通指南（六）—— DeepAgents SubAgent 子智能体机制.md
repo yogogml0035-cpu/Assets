@@ -53,22 +53,39 @@ DeepAgents 作为一款便捷高效的深度智能体搭建框架，提供了两
 1\. 首先创建模型与工具对象。这里同样使用 DeepSeek 模型，并创建一个模拟网络搜索的工具
 
 ```python
-from dotenv import load_dotenvfrom deepagents import create_deep_agentfrom langchain_core.tools import toolfrom langchain_deepseek import ChatDeepSeek
+from dotenv import load_dotenv
+from deepagents import create_deep_agent
+from langchain_core.tools import tool
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-@tooldef internet_search():    print('模拟网络搜索功能')
-model = ChatDeepSeek(    model="deepseek-chat",)
+
+@tool
+def internet_search():
+    print("模拟网络搜索功能")
+
+model = ChatDeepSeek(model="deepseek-chat")
 ```
 
 2\. 使用 Python 字典形式配置子智能体（SubAgent），包括 `name` 、 `description` 、 `system_prompt` 和 `tools` 等字段。其中 `name` 是子智能体的名字； `description` 非常重要，主智能体会通过它了解每个子智能体的功能； `system_prompt` 用于让子智能体明确自身的职责； `tools` 则用于为每个子智能体配备针对性的工具。除了这些必备参数，还有一些可选参数： `model` 可以为该子智能体单独配置模型，若不配置则默认与主智能体使用同一模型； `middleware` 用于为子智能体配置所需的中间件； `interrupt_on` 用于为子智能体配置“人在回路”机制。这些与普通 Agent 的创建方式相同，这里不再赘述。
 
-```javascript
-internet_subagent = {    'name': 'internet_agent',    'description': '实用网络工具从网络中搜索信息',    'system_prompt': '你是一个网络搜索智能体，擅长从网络中搜索主智能体需要的关键信息',    'tools': [internet_search],    'model': model}
+```python
+internet_subagent = {
+    "name": "internet_agent",
+    "description": "实用网络工具从网络中搜索信息",
+    "system_prompt": "你是一个网络搜索智能体，擅长从网络中搜索主智能体需要的关键信息",
+    "tools": [internet_search],
+    "model": model,
+}
 ```
 
 3\. 最后，将配置好的子智能体列表传入 `create_deep_agent` 函数，即可完成智能体的创建。
 
-```makefile
-agent = create_deep_agent(    model=model,    subagents=[internet_subagent])
+```python
+agent = create_deep_agent(
+    model=model,
+    subagents=[internet_subagent],
+)
 ```
 
 ## 方法二：编译后的子智能体
@@ -78,25 +95,53 @@ agent = create_deep_agent(    model=model,    subagents=[internet_subagent])
 1\. 当遇到更灵活、更具定制性的需求时，可以先通过标准的 `create_agent` 函数在外部创建一个子智能体对象，参数配置与大家熟悉的 LangChain `create_agent` 方式完全相同。
 
 ```python
-from dotenv import load_dotenvfrom deepagents import create_deep_agent, CompiledSubAgentfrom langchain_core.tools import toolfrom langchain_deepseek import ChatDeepSeekfrom langchain.agents import create_agent
+from dotenv import load_dotenv
+from deepagents import CompiledSubAgent, create_deep_agent
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-@tooldef internet_search():    print('模拟网络搜索功能')
-model = ChatDeepSeek(    model="deepseek-chat",)
-custom_agent = create_agent(    model=model,    tools=[internet_search],    system_prompt='你是一个网络搜索智能体')
+
+@tool
+def internet_search():
+    print("模拟网络搜索功能")
+
+model = ChatDeepSeek(model="deepseek-chat")
+custom_agent = create_agent(
+    model=model,
+    tools=[internet_search],
+    system_prompt="你是一个网络搜索智能体",
+)
 ```
 
 2\. 为创建好的智能体通过 `CompiledSubAgent` 编译为子智能体，并为该子智能体添加名称与描述，以确保主智能体能够理解其职责。
 
-```javascript
-research_subagent = {    "name": "research-agent",    "description": "用于深度搜索网络信息",    "system_prompt": "你是一个网络搜索大师，可以调用网络搜索工具搜索用户想了解的内容",    "tools": [internet_search],}
-summary_agent = create_agent(    model=model,    system_prompt='你用来根据现有资料总结并提供用户想要的短篇报告')
-summary_subagent = CompiledSubAgent(    name='summary-agent',    description='用来根据提供的新闻或搜索信息编写短篇报告，500字以内',    runnable=summary_agent)
+```python
+research_subagent = {
+    "name": "research-agent",
+    "description": "用于深度搜索网络信息",
+    "system_prompt": "你是一个网络搜索大师，可以调用网络搜索工具搜索用户想了解的内容",
+    "tools": [internet_search],
+}
+summary_agent = create_agent(
+    model=model,
+    system_prompt="你用来根据现有资料总结并提供用户想要的短篇报告",
+)
+summary_subagent = CompiledSubAgent(
+    name="summary-agent",
+    description="用来根据提供的新闻或搜索信息编写短篇报告，500字以内",
+    runnable=summary_agent,
+)
 ```
 
 3\. 最后，将编译好的子智能体对象传入主智能体。
 
-```makefile
-agent = create_deep_agent(    model=model,    subagents=[custom_subagent])
+```python
+agent = create_deep_agent(
+    model=model,
+    subagents=[custom_subagent],
+)
 ```
 
 这种方式可以实现更精细的自定义，比如为子智能体单独配置回调、检查点等高级功能。
@@ -114,40 +159,78 @@ agent = create_deep_agent(    model=model,    subagents=[custom_subagent])
 ## 2\. 导入依赖包，定义模型和搜索工具
 
 ```python
-import osfrom typing import Literal
-from dotenv import load_dotenvfrom deepagents import create_deep_agent, CompiledSubAgentfrom langchain_core.tools import toolfrom langchain_deepseek import ChatDeepSeekfrom langchain.agents import create_agentfrom tavily import TavilyClient
+import os
+from typing import Literal
+
+from dotenv import load_dotenv
+from deepagents import CompiledSubAgent, create_deep_agent
+from langchain.agents import create_agent
+from langchain_core.tools import tool
+from langchain_deepseek import ChatDeepSeek
+from tavily import TavilyClient
+
 load_dotenv()
 tavily_client = TavilyClient(api_key=os.getenv("TAVILY_API_KEY"))
-model = ChatDeepSeek(    model="deepseek-chat",)
-@tooldef internet_search(    query: str,    max_results: int = 5,    topic: Literal["general", "news", "finance"] = "general",    include_raw_content: bool = False,):    """使用 Tavily API 执行互联网搜索，获取实时或最新的网络信息。
-    当需要回答需要当前新闻、最新数据或超出模型知识范围的外部信息时，    可以使用此工具进行联网搜索。支持普通网页搜索、新闻搜索和金融领域搜索。
-    Args:        query (str): 要搜索的问题或关键词，应清晰、具体地描述所需信息。        max_results (int, optional): 返回的最大搜索结果数量。默认为 5。        topic (Literal["general", "news", "finance"], optional): 搜索主题类型。            - "general"：通用网页搜索，适用于大部分事实性、常识性问题。            - "news"：新闻搜索，获取近期相关新闻报道。            - "finance"：金融领域搜索，适用于股票、经济、公司财务等信息。            默认为 "general"。        include_raw_content (bool, optional): 是否在结果中包含原始网页正文内容。            设为 True 会返回更详细的页面文本（可能较长），默认为 False。
-    Returns:        dict: Tavily API 返回的搜索结果对象。通常包含以下字段：            - "results": 列表，每个元素包含 title、url、content（摘要）等。            - "query": 原始查询字符串。            - 若 include_raw_content 为 True，还可能包含 raw_content 字段。    """    return tavily_client.search(        query,        max_results=max_results,        include_raw_content=include_raw_content,        topic=topic,    )
+model = ChatDeepSeek(model="deepseek-chat")
+
+@tool
+def internet_search(
+    query: str,
+    max_results: int = 5,
+    topic: Literal["general", "news", "finance"] = "general",
+    include_raw_content: bool = False,
+):
+    """使用 Tavily API 执行互联网搜索，获取实时或最新的网络信息。"""
+    return tavily_client.search(
+        query,
+        max_results=max_results,
+        include_raw_content=include_raw_content,
+        topic=topic,
+    )
 ```
 
 ## 3\. 编写搜索子智能体和总结分析智能体
 
 这里分别使用基于字典创建与编译子智能体两种方法。
 
-```javascript
-research_subagent = {    "name": "research-agent",    "description": "用于深度搜索网络信息",    "system_prompt": "你是一个网络搜索大师，可以调用网络搜索工具搜索用户想了解的内容",    "tools": [internet_search],}
-summary_agent = create_agent(    model=model,    system_prompt='你用来根据现有资料总结并提供用户想要的短篇报告')
-summary_subagent = CompiledSubAgent(    name='summary-agent',    description='用来根据提供的新闻或搜索信息编写短篇报告，500字以内')
+```python
+research_subagent = {
+    "name": "research-agent",
+    "description": "用于深度搜索网络信息",
+    "system_prompt": "你是一个网络搜索大师，可以调用网络搜索工具搜索用户想了解的内容",
+    "tools": [internet_search],
+}
+summary_agent = create_agent(
+    model=model,
+    system_prompt="你用来根据现有资料总结并提供用户想要的短篇报告",
+)
+summary_subagent = CompiledSubAgent(
+    name="summary-agent",
+    description="用来根据提供的新闻或搜索信息编写短篇报告，500字以内",
+)
 ```
 
 ## 4\. 创建 DeepAgent 智能体并传入子智能体
 
-```makefile
-agent = create_deep_agent(    model=model,    subagents=[research_subagent, summary_subagent])
+```python
+agent = create_deep_agent(
+    model=model,
+    subagents=[research_subagent, summary_subagent],
+)
 ```
 
 ## 5\. 执行任务并观察输出
 
 不知道大家最近有没有和笔者一样，每天都在为“朗哥”与“老美”的对抗而揪心？今天笔者就通过一个任务，来论证“伊朗必胜，美国必败”的原因。格式化输出的程序与上篇文章 [《LangChain DeepAgents 速通指南（五）—— 快速了解 DeepAgents 框架及其核心特性》](https://mp.weixin.qq.com/s?__biz=Mzk3NTA2OTMxNQ==&mid=2247485906&idx=1&sn=1024589caa410a2b36aff4f320eba259&scene=21#wechat_redirect) 中的一致，这里不再赘述：
 
-```makefile
-step_num=0query = "请分析2026年4月3日伊朗和美国战事的情况，并撰写短篇报告分析为什么美国注定失败，500字以内的报告"
-for event in agent.stream(    {"messages": [{"role": "user", "content": query}]},    stream_mode="values"):...
+```python
+step_num = 0
+query = "请分析2026年4月3日伊朗和美国战事的情况，并撰写短篇报告分析为什么美国注定失败，500字以内的报告"
+for event in agent.stream(
+    {"messages": [{"role": "user", "content": query}]},
+    stream_mode="values",
+):
+    ...
 ```
 
 ## 6\. 观察执行结果
