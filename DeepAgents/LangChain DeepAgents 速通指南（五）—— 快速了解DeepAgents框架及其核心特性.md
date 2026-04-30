@@ -65,18 +65,24 @@ DeepAgents 的核心思想其实非常直观：为了让智能体能够更深入
 
 **1\. 环境配置** ：使用 Anaconda 创建虚拟环境，并在其中安装 `deepagents` 包:
 
-```apache
-conda create -n langchaindeepagents python=3.12conda activate langchaindeepagentspip install -U deepagents
+```bash
+conda create -n langchaindeepagents python=3.12
+conda activate langchaindeepagents
+pip install -U deepagents
 ```
 
 ![图片](data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='1px' height='1px' viewBox='0 0 1 1' version='1.1' xmlns='http://www.w3.org/2000/svg' xmlns:xlink='http://www.w3.org/1999/xlink'%3E%3Ctitle%3E%3C/title%3E%3Cg stroke='none' stroke-width='1' fill='none' fill-rule='evenodd' fill-opacity='0'%3E%3Cg transform='translate(-249.000000, -126.000000)' fill='%23FFFFFF'%3E%3Crect x='249' y='126' width='1' height='1'%3E%3C/rect%3E%3C/g%3E%3C/g%3E%3C/svg%3E)
 
 **2\. 创建项目文件** ：编写如下代码。这里笔者让 DeepAgents 协助撰写一份关于伊朗和美国文化的分析报告。模型同样使用 DeepSeek，并引入 `rich` 库来美化命令行输出（可通过 `pip install rich` 安装）:
 
-```javascript
-from dotenv import load_dotenvfrom deepagents import create_deep_agentfrom langchain_deepseek import ChatDeepSeekfrom deepagents.backends import FilesystemBackend
+```python
+from dotenv import load_dotenv
+from deepagents import create_deep_agent
+from deepagents.backends import FilesystemBackend
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)
+model = ChatDeepSeek(model="deepseek-chat")
 ```
 
 **3\. 使用 `create_deep_agent` 构建智能体：** 该 API 有几个关键参数值得关注：
@@ -92,20 +98,66 @@ model = ChatDeepSeek(    model="deepseek-chat",)
 
 ```python
 research_instruction = """ 你是一位从事国际关系研究的专家，能够分析不同国家的国情，并按照用户的要求生成报告"""
-agent = create_deep_agent(    model=model,    tools=[],    system_prompt=research_instruction,    subagents=[],    backend=FilesystemBackend(root_dir="./test_dir", virtual_mode=True))
+agent = create_deep_agent(
+    model=model,
+    tools=[],
+    system_prompt=research_instruction,
+    subagents=[],
+    backend=FilesystemBackend(root_dir="./test_dir", virtual_mode=True),
+)
 ```
 
 **4\. 执行任务** 。笔者这里给智能体一个具体任务：“请分析伊朗和美国的国情，并帮我撰写一份1500字左右的为什么伊朗和美国会对立的报告”。DeepAgents 的执行方式与 `create_agent` 完全一致，这里采用流式输出，并借助 Rich 库优化显示效果，方便直观感受运行过程。（关于 LangChain 流式输出的更多细节，可参考文章 [《LangChain1.0速通指南（二）——LangChain1.0 create\_agent api 基础知识](https://mp.weixin.qq.com/s?__biz=Mzk3NTA2OTMxNQ==&mid=2247485146&idx=1&sn=1397839d622039d1665868f97a329f43&scene=21#wechat_redirect) [》](https://mp.weixin.qq.com/s?__biz=Mzk3NTA2OTMxNQ==&mid=2247485146&idx=1&sn=1397839d622039d1665868f97a329f43&scene=21#wechat_redirect) ， 笔者之后也会撰写专门文章分析如何处理DeepAgents的流式输出：
 
 ```python
-for event in agent.stream(    {"messages": [{"role": "user", "content": query}]},    stream_mode="values"):    step_num += 1
-    console.print(f"\n[bold yellow]{'─' * 80}[/bold yellow]")    console.print(f"[bold yellow]步骤 {step_num}[/bold yellow]")    console.print(f"[bold yellow]{'─' * 80}[/bold yellow]")
-    if "messages" in event:        messages = event["messages"]
-        if messages:            msg = messages[-1]
-            # 保存最终响应            if hasattr(msg, 'content') and msg.content and not hasattr(msg, 'tool_calls'):                final_response = msg.content
-            # AI 思考            if hasattr(msg, 'content') and msg.content:                # 如果内容太长,只显示前300字符作为预览                content = msg.content                if not (hasattr(msg, 'tool_calls') and msg.tool_calls):                    preview = content                    console.print(Panel(                        preview,                        title="[bold green]AI 思考[/bold green]",                        border_style="green"                    ))                else:                    console.print(Panel(                        content,                        title="[bold green]AI 思考[/bold green]",                        border_style="green"                    ))
-            # 工具调用            if hasattr(msg, 'tool_calls') and msg.tool_calls:                for tool_call in msg.tool_calls:                    tool_info = {                        "工具名称": tool_call.get('name', 'unknown'),                        "参数": tool_call.get('args', {})                    }                    console.print(Panel(                        JSON(json.dumps(tool_info, ensure_ascii=False)),                        title="[bold blue]工具调用[/bold blue]",                        border_style="blue"                    ))
-            # 工具响应            if hasattr(msg, 'name') and msg.name:                response = str(msg.content)                console.print(Panel(                    response,                    title=f"[bold magenta]工具响应: {msg.name}[/bold magenta]",                    border_style="magenta"                ))
+for event in agent.stream(
+    {"messages": [{"role": "user", "content": query}]},
+    stream_mode="values",
+):
+    step_num += 1
+    console.print(f"\n[bold yellow]{'─' * 80}[/bold yellow]")
+    console.print(f"[bold yellow]步骤 {step_num}[/bold yellow]")
+    console.print(f"[bold yellow]{'─' * 80}[/bold yellow]")
+
+    if "messages" in event:
+        messages = event["messages"]
+        if messages:
+            msg = messages[-1]
+
+            # 保存最终响应
+            if hasattr(msg, "content") and msg.content and not hasattr(msg, "tool_calls"):
+                final_response = msg.content
+
+            # AI 思考
+            if hasattr(msg, "content") and msg.content:
+                content = msg.content
+                console.print(Panel(
+                    content,
+                    title="[bold green]AI 思考[/bold green]",
+                    border_style="green",
+                ))
+
+            # 工具调用
+            if hasattr(msg, "tool_calls") and msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    tool_info = {
+                        "工具名称": tool_call.get("name", "unknown"),
+                        "参数": tool_call.get("args", {}),
+                    }
+                    console.print(Panel(
+                        JSON(json.dumps(tool_info, ensure_ascii=False)),
+                        title="[bold blue]工具调用[/bold blue]",
+                        border_style="blue",
+                    ))
+
+            # 工具响应
+            if hasattr(msg, "name") and msg.name:
+                response = str(msg.content)
+                console.print(Panel(
+                    response,
+                    title=f"[bold magenta]工具响应: {msg.name}[/bold magenta]",
+                    border_style="magenta",
+                ))
 console.print("\n[bold green]任务完成![/bold green]\n")
 ```
 

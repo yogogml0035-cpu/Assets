@@ -50,9 +50,25 @@ pip install deepagents
 - **`edit_file`**
 	对已有文件进行修改（支持追加、替换等操作）。
 
-```makefile
-from langchain.agents import create_agentfrom langchain_deepagents import FileSystemMiddleware
-agent = create_agent(    model=model,    middlewares=[        FileSystemMiddleware(            # 核心配置参数：BACKEND，决定记忆的存储方式            backend=None,            # 可选：自定义系统提示和工具描述            system_prompt="Write to the filesystem when...",            custom_tool_descriptions={                "ls": "Use the 1s tool when..."                "read file":"Use the read file tool to.        )    ])
+```python
+from langchain.agents import create_agent
+from langchain_deepagents import FileSystemMiddleware
+
+agent = create_agent(
+    model=model,
+    middlewares=[
+        FileSystemMiddleware(
+            # 核心配置参数：backend，决定记忆的存储方式
+            backend=None,
+            # 可选：自定义系统提示和工具描述
+            system_prompt="Write to the filesystem when...",
+            custom_tool_descriptions={
+                "ls": "Use the ls tool when...",
+                "read_file": "Use the read_file tool to...",
+            },
+        )
+    ],
+)
 ```
 
 ### 3\. 参数说明
@@ -79,11 +95,31 @@ agent = create_agent(    model=model,    middlewares=[        FileSystemMiddlewa
 笔者编写了如下示例代码测试 `FileSystemBackend` 的使用：
 
 ```python
-from dotenv import load_dotenvfrom langchain.agents import create_agentfrom langchain_deepseek import ChatDeepSeekfrom deepagents import FilesystemMiddlewarefrom deepagents.backends import FilesystemBackendfrom langchain.messages import HumanMessage
+from dotenv import load_dotenv
+from deepagents import FilesystemMiddleware
+from deepagents.backends import FilesystemBackend
+from langchain.agents import create_agent
+from langchain.messages import HumanMessage
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)
-agent_local = create_agent(    model=model,    tools=[],    middleware=[        FilesystemMiddleware(            backend=FilesystemBackend(root_dir="./test_dir", virtual_mode=True)        )    ])
-res = agent_local.invoke(    {        'messages': [HumanMessage("调用工具写入一个文件，文件名为:测试.txt, 内容为: '测试'")]    })
+model = ChatDeepSeek(model="deepseek-chat")
+agent_local = create_agent(
+    model=model,
+    tools=[],
+    middleware=[
+        FilesystemMiddleware(
+            backend=FilesystemBackend(root_dir="./test_dir", virtual_mode=True)
+        )
+    ],
+)
+res = agent_local.invoke(
+    {
+        "messages": [
+            HumanMessage("调用工具写入一个文件，文件名为:测试.txt, 内容为: '测试'")
+        ]
+    }
+)
 print(res)
 ```
 
@@ -100,11 +136,33 @@ print(res)
 配置时需要使用 Lambda 表达式延迟创建后端对象，因为状态是在运行时动态绑定的。示例如下：
 
 ```python
-from dotenv import load_dotenvfrom langchain.agents import create_agentfrom langchain_deepseek import ChatDeepSeekfrom deepagents import FilesystemMiddlewarefrom deepagents.backends import FilesystemBackend, StateBackendfrom langchain.messages import HumanMessage
+from dotenv import load_dotenv
+from deepagents import FilesystemMiddleware
+from deepagents.backends import StateBackend
+from langchain.agents import create_agent
+from langchain.messages import HumanMessage
+from langchain_deepseek import ChatDeepSeek
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)agent_local = create_agent(    model=model,    tools=[],    middleware=[        FilesystemMiddleware(            backend=lambda runtime: StateBackend(runtime)        )    ])
-res = agent_local.invoke(    {        'messages': [            HumanMessage("调用工具写入一个文件，文件名为:测试.txt, 内容为: '你好帅'"),            HumanMessage('调用工具读取名为测试.txt的文件，告诉我里面的内容')        ]    },)
-print(res['messages'][-1].content)
+model = ChatDeepSeek(model="deepseek-chat")
+agent_local = create_agent(
+    model=model,
+    tools=[],
+    middleware=[
+        FilesystemMiddleware(
+            backend=lambda runtime: StateBackend(runtime)
+        )
+    ],
+)
+res = agent_local.invoke(
+    {
+        "messages": [
+            HumanMessage("调用工具写入一个文件，文件名为:测试.txt, 内容为: '你好帅'"),
+            HumanMessage("调用工具读取名为测试.txt的文件，告诉我里面的内容"),
+        ]
+    },
+)
+print(res["messages"][-1].content)
 ```
 
 运行结果如下，单个线程中 Agent 成功读取了之前写入的内容：
@@ -125,13 +183,53 @@ print(res['messages'][-1].content)
 示例代码如下：
 
 ```python
-from dotenv import load_dotenvfrom langchain.agents import create_agentfrom langchain_deepseek import ChatDeepSeekfrom deepagents import FilesystemMiddlewarefrom deepagents.backends import FilesystemBackend, StateBackend, StoreBackendfrom langchain.messages import HumanMessagefrom langgraph.store.memory import InMemoryStore
+from dotenv import load_dotenv
+from deepagents import FilesystemMiddleware
+from deepagents.backends import StoreBackend
+from langchain.agents import create_agent
+from langchain.messages import HumanMessage
+from langchain_deepseek import ChatDeepSeek
+from langgraph.store.memory import InMemoryStore
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)store = InMemoryStore()agent_local1 = create_agent(    model=model,    tools=[],    store=store,    middleware=[        FilesystemMiddleware(            backend=lambda runtime: StoreBackend(runtime)        )    ])
-agent_local1.invoke({    'messages':[        HumanMessage("调用工具写入一个文件，文件名为:测试.txt, 内容为: '你好帅'"),    ]})
-agent_local2 = create_agent(    model=model,    tools=[],    store=store, # 同一个store实例    middleware=[        FilesystemMiddleware(            backend=lambda runtime: StoreBackend(runtime)        )    ])
-res = agent_local2.invoke(    {        'messages': [            HumanMessage('调用工具读取名为测试.txt的文件，告诉我里面的内容')        ]    },)
-print(res['messages'][-1].content)
+model = ChatDeepSeek(model="deepseek-chat")
+store = InMemoryStore()
+agent_local1 = create_agent(
+    model=model,
+    tools=[],
+    store=store,
+    middleware=[
+        FilesystemMiddleware(
+            backend=lambda runtime: StoreBackend(runtime)
+        )
+    ],
+)
+agent_local1.invoke(
+    {
+        "messages": [
+            HumanMessage("调用工具写入一个文件，文件名为:测试.txt, 内容为: '你好帅'"),
+        ]
+    }
+)
+
+agent_local2 = create_agent(
+    model=model,
+    tools=[],
+    store=store,  # 同一个 store 实例
+    middleware=[
+        FilesystemMiddleware(
+            backend=lambda runtime: StoreBackend(runtime)
+        )
+    ],
+)
+res = agent_local2.invoke(
+    {
+        "messages": [
+            HumanMessage("调用工具读取名为测试.txt的文件，告诉我里面的内容")
+        ]
+    },
+)
+print(res["messages"][-1].content)
 ```
 
 执行结果如下图所示，第二个 Agent 能够读取第一个 Agent 写入的内容，说明存储对象独立于线程，写入的内容不会随线程结束而消失：
@@ -155,17 +253,57 @@ print(res['messages'][-1].content)
 下面通过示例演示 `CompositeBackend` 的使用：
 
 ```python
-from dotenv import load_dotenvfrom langchain.agents import create_agentfrom langchain_deepseek import ChatDeepSeekfrom deepagents import FilesystemMiddlewarefrom deepagents.backends import FilesystemBackend, StateBackend, StoreBackend, CompositeBackendfrom langchain.messages import HumanMessagefrom langgraph.store.memory import InMemoryStore
+from dotenv import load_dotenv
+from deepagents import FilesystemMiddleware
+from deepagents.backends import CompositeBackend, StateBackend, StoreBackend
+from langchain.agents import create_agent
+from langchain_deepseek import ChatDeepSeek
+from langgraph.store.memory import InMemoryStore
+
 load_dotenv()
-model = ChatDeepSeek(    model="deepseek-chat",)
+model = ChatDeepSeek(model="deepseek-chat")
 store = InMemoryStore()
-composite_backend = lambda runtime: CompositeBackend(    default=StateBackend(runtime),    routes={        "/memories/": StoreBackend(runtime)    })
-agent = create_agent(    model=model,    store=store,    middleware=[        FilesystemMiddleware(            backend=composite_backend        )    ])
+composite_backend = lambda runtime: CompositeBackend(
+    default=StateBackend(runtime),
+    routes={
+        "/memories/": StoreBackend(runtime),
+    },
+)
+agent = create_agent(
+    model=model,
+    store=store,
+    middleware=[
+        FilesystemMiddleware(
+            backend=composite_backend
+        )
+    ],
+)
 config1 = {"configurable": {"thread_id": '1'}}
-# 智能体将 "preferences.txt" 写入 /memories/ 路径agent.invoke({    "messages": [{"role": "user", "content": "我最爱的水果是草莓, 请把我的偏好保存在/memories/preferences.txt"}]}, config=config1)
+# 智能体将 "preferences.txt" 写入 /memories/ 路径
+agent.invoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "我最爱的水果是草莓, 请把我的偏好保存在/memories/preferences.txt",
+            }
+        ]
+    },
+    config=config1,
+)
 config2 = {"configurable": {"thread_id": '2'}}
-res = agent.invoke({    "messages": [{"role": "user", "content": "请从/memories/获取我最爱的水果是什么?"}]}, config=config2)
-print(res['messages'][-1].content)
+res = agent.invoke(
+    {
+        "messages": [
+            {
+                "role": "user",
+                "content": "请从/memories/获取我最爱的水果是什么?",
+            }
+        ]
+    },
+    config=config2,
+)
+print(res["messages"][-1].content)
 ```
 
 执行结果如下图所示，第二个线程的 Agent 成功读取了第一个线程中写入的 `/memories/` 下的文件，说明复合后端成功将持久化数据路由到了共享存储。这也揭示了中间件命名为 `FileSystemMiddleware` 的缘由：无论后端是内存还是真实文件，都可以被抽象成一个统一的虚拟文件系统供 Agent 使用。
